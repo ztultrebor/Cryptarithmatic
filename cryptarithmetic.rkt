@@ -60,7 +60,6 @@
 ; !!!
 (define (fill_in formula)
 """Generate all possible fillings-in of letters in formula with digits."""
-  
   ; - IN -
   (list formula))
 
@@ -73,9 +72,25 @@
       [else #f]))
 
 
+(define (permute lst n)
+; [ListOf X] N -> [ListOf [ListOf X]]
+; create all permutations of given lst that have length n
+  (local ((define (permute assemblage parts n)
+            (cond
+                [(empty? parts) (list assemblage)]
+                [(= n 0) (list assemblage)]
+                [else
+                (foldr append
+                        '()
+                        (map (lambda (p) (permute (cons p assemblage) (remove p parts) (sub1 n)))
+                              parts))])))
+    ; - IN -
+    (permute '() lst n)))
+
+
 (define (list->set lst)
-  ; [ListOf X] -> [ListOf X]
-  ; converts a list into a set, a list in which no items repeat.
+  """[ListOf X] -> [ListOf X]
+  converts a list into a set, a list in which no items repeat."""
   (local ((define (list->set set lst)
     (cond
       [(empty? lst) set]
@@ -86,3 +101,6 @@
 
 
 (parse (substitute '(= (+ ODD ODD) EVEN) '(0 1 2 3 4 5 6 7 8 9)))
+
+
+(permute '(0 1 2 3 4 5 6 7 8 9) 5)
