@@ -40,8 +40,11 @@
               [else (replace l (rest ls) (rest ds))]))
           (define (substitute formula)
             (match formula
-              [(? symbol?) (string->symbol (foldr string-append "" (map (lambda (l) (replace l letters digits))
-                              (string->list (symbol->string formula)))))]
+              [(? symbol?) 
+                (string->number 
+                  (foldr string-append "" 
+                                      (map (lambda (l) (replace l letters digits))
+                                            (string->list (symbol->string formula)))))]
               [(list '+   x y) (list '+ (substitute x) (substitute y))]
               [(list '=   x y) (list '=  (substitute x) (substitute y))])))
       ; - IN -
@@ -82,7 +85,4 @@
     (list->set '() lst)))
 
 
-
-(define subby (substitute '(= (+ ODD ODD) EVEN) '(0 1 2 3 4 5 6 7 8 9)))
-
-(parse subby)
+(parse (substitute '(= (+ ODD ODD) EVEN) '(0 1 2 3 4 5 6 7 8 9)))
