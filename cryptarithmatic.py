@@ -1,40 +1,70 @@
 # import string     # not clear if this is necessary
 import re, itertools
 
-def solve(formula):
-    """Given a formula like 'ODD + ODD == EVEN', fill in digits to solve it.
-    Input formula is a string; output is a digit-filled-in string or None."""
-    for f in next(fill_in(formula)):
-        if valid(f):
-            print(f)
-    return None
+
+
+#=======================
+# functions
+
+
+def solve(expression):
+    """String -> [ListOf String]
+       Given a formula like 'ODD + ODD == EVEN', fill in digits to solve it. 
+       Returns valid solutions"""
+    f, variables = compile_formula(expression)
+    solutions = []
+    for args in itertools.permutations([0,1,2,3,4,5,6,7,8,9], len(variables)):
+        if f(*args):
+            table = str.maketrans(variables, ''.join(map(str, args)))
+            substexpression = expression.translate(table)
+            if not(re.search(r'\b0[0-9]', substexpression)):
+                solutions.append(substexpression)
+    return solutions
         
 
-def fill_in(formula):
-    """Generate all possible fillings-in of letters in formula with digits."""
-    variables = ''.join(re.findall(r'[A-Z]', formula))
-    yield (formula.translate(
-            str.maketrans(variables, ''.join(perm)))
-                for perm in 
-                    itertools.permutations('0123456789', len(variables)))
+def compile_formula(expression):
+    """String -> [*N -> Bool] String
+       takes an expression, extracts its variables and produces a
+       lambda function, as well as a string that corresponds to 
+       variables extracted from the the expression . This function 
+       need be evaluated only once, thereby saving great amount of compute"""
+    variables = ''.join(set(re.findall(r'[A-Z]', expression)))
+    params = ','.join(variables)
+    words = (re.split(r'([A-Z]+)', expression))
+    body = ''.join([compile_word(w) for w in words])
+    return eval('lambda %s: %s' % (params, body)), variables
 
 
-def valid(expression):
-    """ String -> Maybe String
-    returns the expression with digits substituted for variables in the case that 
-    it forms a true 
-    and valid mathematical expression"""
-    try:
-         if not(re.search(r'\b0[0-9]', expression)) and eval(expression):
-             return expression
-    except ArithmeticError:
-        return False
-        
+def compile_word(word):
+    """String -> String
+       Compile a word of uppercase letters as numeric digits.
+       E.g., compile_word('YOU') => '(1*U+10*O+100*Y)'
+       Non-uppercase words unchanged: compile_word('+') => '+'"""
+    if re.match(r'[A-Z]+', word):
+        return '(' + '+'.join((str(10**(len(word)-p-1))) + '*' + l 
+                              for (p,l) in enumerate(word)) + ')'
+    else:
+        return word
 
 
-table = str.maketrans('ABCD', '1230')
-f = 'ODD + ODD == EVEN'
+def display(solutions):
+    """[ListOf String] -> None
+       Prints out each valid solution on a new line"""
+    print("")
+    for s in solutions:
+        print(s)
+    print("")
 
-#print(solve(f))
-print(solve(f))
-print(solve('A + B == C'))
+
+
+#=======================
+# actions!
+
+display(solve('ODD + ODD == EVEN'))
+display(solve('ATOM**(1/2) == A + TO + M'))
+display(solve('ATOM**(1/2) == AT + O + M'))
+display(solve('ATOM**(1/2) == AT + OM'))
+display(solve('A**N + B**N == C**N and N > 1'))
+display(solve('A**N + IB**N == IC**N and N > 1'))
+display(solve('A**N + B**N + C**N == D**N and N > 1'))
+display(solve('A**N + IB**N == I**N + ID**N == IXDA and N > 1'))
