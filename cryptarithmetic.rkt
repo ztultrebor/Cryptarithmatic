@@ -1,20 +1,45 @@
 #lang racket
 
 
-(define (parse sexpr)
-  ; S-Expr -> BSL-Expr
-  ; takes an S-expression and converts it into a BSL-expression
+(define (solve formula)
+    """S-Expr -> S-Expr
+    Given a formula like 'ODD + ODD == EVEN', fill in digits to solve it.
+    Return the solved S-Expr"""
+    (ormap valid (fill-in formula)))
+
+
+(define (fill-in formula)
+"""S-Expr -> [ListOf S-Expr]
+Generate all possible fillings-in of letters in formula with digits."""
+  (local ((define variables (get-lett formula))
+          (define replacements (permute '(0 1 2 3 4 5 6 7 8 9) (length variables))))
+  ; - IN -
+  (map (lambda (r) (substitute formula variables r)) replacements)))
+
+
+(define (valid f)
+    """S-Expr -> [Maybe S-Expr]
+    Formula f is valid if and only if it evals true (plus it should have no 
+    numbers with leading zeros, but that's not working yet.)"""
+    (cond
+      [(eval f) f]
+      [else #f]))
+
+
+(define (eval sexpr)
+  """S-Expr -> Boolean
+  takes an S-expression and converts it into a BSL-expression"""
   (match sexpr
     [(? number?) sexpr]
     [(? boolean?) sexpr]
     [(? symbol?) sexpr]
     [(? string?) (error "no strings allowed")]
-    [(list '+ x y) (+ (parse x) (parse y))]
-    [(list '* x y) (+ (parse x) (parse y))]
-    [(list '= x y) (= (parse x) (parse y))]
-    [(list 'and x y) (and (parse x) (parse y))]
-    [(list 'or x y) (or (parse x) (parse y))]
-    [(list 'not x) (not (parse x))]))
+    [(list '+ x y) (+ (eval x) (eval y))]
+    [(list '* x y) (+ (eval x) (eval y))]
+    [(list '= x y) (= (eval x) (eval y))]
+    [(list 'and x y) (and (eval x) (eval y))]
+    [(list 'or x y) (or (eval x) (eval y))]
+    [(list 'not x) (not (eval x))]))
 
 
 (define (get-lett formula)
@@ -29,11 +54,10 @@
     (list->set (string->list (get-lett formula)))))
 
 
-(define (substitute formula digits)
-  """S-Expr [ListOf N] -> S-Expr
+(define (substitute formula letters digits)
+  """S-Expr [ListOf Char] [ListOf N] -> S-Expr
   takes an S-expression and replaces all alphabetic symbols with numerics"""
-  (local ((define letters (get-lett formula))
-          (define (replace l ls ds)
+  (local ((define (replace l ls ds)
             (cond
               [(empty? ls) #f]
               [(equal? (first ls) l) (number->string (first ds))]
@@ -51,25 +75,13 @@
       (substitute formula)))
 
  
-(define (solve formula)
-    """Given a formula like 'ODD + ODD == EVEN', fill in digits to solve it.
-    Input formula is a string; output is a digit-filled-in string or None."""
-    (ormap valid (fill_in formula)))
 
 
-; !!!
-(define (fill_in formula)
-"""Generate all possible fillings-in of letters in formula with digits."""
-  ; - IN -
-  (list formula))
 
 
-(define (valid f)
-    """Formula f is valid if and only if it has no 
-    numbers with leading zero, and evals true."""
-    (cond
-      [(parse f) f]
-      [else #f]))
+
+
+
 
 
 (define (permute lst n)
@@ -100,7 +112,4 @@
     (list->set '() lst)))
 
 
-(parse (substitute '(= (+ ODD ODD) EVEN) '(0 1 2 3 4 5 6 7 8 9)))
-
-
-(permute '(0 1 2 3 4 5 6 7 8 9) 5)
+(fill-in '(= (+ ODD ODD) EVEN))
