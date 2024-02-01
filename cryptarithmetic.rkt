@@ -11,7 +11,7 @@
   """S-Expr -> S-Expr
      Given a formula like 'ODD + ODD == EVEN', fill in digits to solve it.
      Return the solved S-Expr"""
-  (filter (lambda (f) (not (false? f))) (map valid (fill-in formula))))
+  (filter (λ (f) (not (false? f))) (map valid (fill-in formula))))
 
 
 ; !!! fix leading 0 problem
@@ -30,7 +30,7 @@
   (local ((define variables (get-lett formula))
           (define replacements (permute '(0 1 2 3 4 5 6 7 8 9) (length variables))))
     ; - IN -
-    (map (lambda (r) (substitute formula variables r)) replacements)))
+    (map (λ (r) (substitute formula variables r)) replacements)))
 
 
 ; !!! there must be a better--an abstract--way
@@ -85,11 +85,27 @@
               [(? symbol?) 
                (string->number 
                 (foldr string-append "" 
-                       (map (lambda (l) (replace l letters digits))
+                       (map (λ (l) (replace l letters digits))
                             (string->list (symbol->string formula)))))]
               [(cons op vars) (cons op (map substitute vars))])))
     ; - IN -
     (substitute formula)))
+
+
+(define (compile-formula expression)
+  """String -> [*N -> Bool] String
+       takes an expression, extracts its variables and produces a
+       λ function, as well as a string that corresponds to 
+       variables extracted from the the expression . This function 
+       need be evaluated only once, thereby saving great amount of compute"""
+    (match expression
+      [(? number?) expression]
+      [(? boolean?) expression]
+      [(? symbol?) (compile-word expression)]
+      [(? string?) (error "no strings allowed")]
+      [(cons '+ vars) (append '(+) (map compile-formula vars))]
+      [(cons '* vars) (append '(*) (map compile-formula vars))]
+      [(cons '= vars) (append '(=) (map compile-formula vars))]))
 
 
 (define (compile-word sym)
@@ -103,7 +119,7 @@
         (local ((define vars (map (λ (x) (string->symbol (string x))) (string->list word)))
                 (define N (length vars)))
           ; - IN -
-          `(+ ,(map (λ (A B) `(* ,A ,B)) vars (build-list N (λ (n) (expt 10 (- N n 1)))))))
+          (append '(+) (map (λ (A B) `(* ,A ,B)) vars (build-list N (λ (n) (expt 10 (- N n 1)))))))
         sym)))
              
 
@@ -117,7 +133,7 @@
               [else
                (foldr append
                       '()
-                      (map (lambda (p) (permute (cons p assemblage) (remove p parts) (sub1 n)))
+                      (map (λ (p) (permute (cons p assemblage) (remove p parts) (sub1 n)))
                            parts))])))
     ; - IN -
     (permute '() lst n)))
@@ -139,8 +155,7 @@
 ; =====================
 ; checks
 
-(compile-word 'ODDSK)
-(compile-word '+)
+(compile-formula '(= (+ ODD ODD) EVEN))
 
 (check-equal? (list->set '(1 2 3 3 4 5 3 4 5)) '(5 4 3 2 1))
 (check-equal? (permute '(1 2 3) 2) '((2 1) (3 1) (1 2) (3 2) (1 3) (2 3)))
