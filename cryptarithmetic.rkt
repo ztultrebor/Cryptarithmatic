@@ -43,7 +43,7 @@
     (match sexpr
       [(? number?) sexpr]
       [(? boolean?) sexpr]
-      [(? symbol?) sexpr]
+      [(? symbol?) (compile-word sexpr)]
       [(? string?) (error "no strings allowed")]
       [(cons '+ vars) (foldl + 0 (map eval vars))]
       [(cons '* vars) (foldl * 1 (map eval vars))]
@@ -91,7 +91,22 @@
     ; - IN -
     (substitute formula)))
 
- 
+
+(define (compile-word sym)
+  """String -> String
+       Compile a word of uppercase letters as numeric digits.
+       E.g., compile_word('YOU') => '(1*U+10*O+100*Y)'
+       Non-uppercase words unchanged: compile_word('+') => '+'"""
+  (local ((define word (symbol->string sym)))
+    ; - IN -
+    (if (regexp-match-positions #rx"[A-Z]+" word)
+        (local ((define vars (map (λ (x) (string->symbol (string x))) (string->list word)))
+                (define N (length vars)))
+          ; - IN -
+          `(+ ,(map (λ (A B) `(* ,A ,B)) vars (build-list N (λ (n) (expt 10 (- N n 1)))))))
+        sym)))
+             
+
 (define (permute lst n)
   """[ListOf X] N -> [ListOf [ListOf X]]
      create all permutations of given lst that have length n"""
@@ -124,6 +139,8 @@
 ; =====================
 ; checks
 
+(compile-word 'ODDSK)
+(compile-word '+)
 
 (check-equal? (list->set '(1 2 3 3 4 5 3 4 5)) '(5 4 3 2 1))
 (check-equal? (permute '(1 2 3) 2) '((2 1) (3 1) (1 2) (3 2) (1 3) (2 3)))
@@ -140,6 +157,7 @@
 (check-equal? (eval '(= (+ 122 122) 4345)) #f)
 (check-equal? (eval '(= (+ 655 655) 1310)) #t)
 (check-equal? (solve '(= (+ ODD ODD) EVEN)) '((= (+ 655 655) 1310) (= (+ 855 855) 1710)))
+
 
 
 ; =====================
