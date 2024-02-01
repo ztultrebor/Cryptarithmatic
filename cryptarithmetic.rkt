@@ -1,6 +1,11 @@
 #lang racket
 
 
+
+; =======================
+; functions
+
+
 (define (solve formula)
     """S-Expr -> S-Expr
     Given a formula like 'ODD + ODD == EVEN', fill in digits to solve it.
@@ -16,7 +21,7 @@
       [(eval f) f]
       [else #f]))
 
-      
+
 (define (fill-in formula)
 """S-Expr -> [ListOf S-Expr]
 Generate all possible fillings-in of letters in formula with digits."""
@@ -39,8 +44,10 @@ Generate all possible fillings-in of letters in formula with digits."""
     [(cons 'and vars) (andmap eval vars)]
     [(cons 'or vars) (ormap eval vars)]
     [(list '= x y) (= (eval x) (eval y))]
+    [(list '> x y) (> (eval x) (eval y))]
     [(list 'not x) (not (eval x))]
-    [(list 'sqrt x) (sqrt (eval x))]))
+    [(list 'sqrt x) (sqrt (eval x))]
+    [(list 'expt x n) (expt (eval x) (eval n))]))
 
 
 (define (get-lett formula)
@@ -48,6 +55,7 @@ Generate all possible fillings-in of letters in formula with digits."""
   takes an S-expression and extracts all the 'variables'"""
   (local ((define (get-lett formula)
     (match formula
+      [(? number?) ""]
       [(? symbol?) (symbol->string formula)]
       [(cons op vars) (foldr string-append "" (map get-lett vars))])))
     ; - IN -
@@ -64,6 +72,7 @@ Generate all possible fillings-in of letters in formula with digits."""
               [else (replace l (rest ls) (rest ds))]))
           (define (substitute formula)
             (match formula
+              [(? number?) formula]
               [(? symbol?) 
                 (string->number 
                   (foldr string-append "" 
@@ -102,7 +111,13 @@ Generate all possible fillings-in of letters in formula with digits."""
     (list->set '() lst)))
 
 
+
+; =====================
+; actions!
+
+
 (solve '(= (+ ODD ODD) EVEN))
 (solve '(= (sqrt ATOM) (+ A TO M)))
 (solve '(= (sqrt ATOM) (+ AT O M)))
 (solve '(= (sqrt ATOM) (+ AT OM)))
+(solve '(and (= (+ (expt A N) (expt B N)) (expt C N)) (> N 1)))
