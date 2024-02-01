@@ -12,7 +12,7 @@
     Return the solved S-Expr"""
     (filter (lambda (f) (not (false? f))) (map valid (fill-in formula))))
 
-
+; !!! fix leading 0 problem
 (define (valid f)
     """S-Expr -> [Maybe S-Expr]
     Formula f is valid if and only if it evals true (plus it should have no 
@@ -31,23 +31,28 @@ Generate all possible fillings-in of letters in formula with digits."""
   (map (lambda (r) (substitute formula variables r)) replacements)))
 
 
+; !!! there must be a better--an abstract--way
 (define (eval sexpr)
   """S-Expr -> Boolean
-  takes an S-expression and converts it into a BSL-expression"""
+  takes an S-expression and mathematically evaluates it for truth"""
+  (local ((define (is? op vars)
+            (local ((define evarls (map eval vars)))
+                      (andmap op (rest (reverse evarls)) (reverse (rest evarls))))))
   (match sexpr
     [(? number?) sexpr]
     [(? boolean?) sexpr]
     [(? symbol?) sexpr]
     [(? string?) (error "no strings allowed")]
-    [(cons '+ vars) (foldr + 0 (map eval vars))]
-    [(cons '* vars) (foldr * 1 (map eval vars))]
+    [(cons '+ vars) (foldl + 0 (map eval vars))]
+    [(cons '* vars) (foldl * 1 (map eval vars))]
     [(cons 'and vars) (andmap eval vars)]
     [(cons 'or vars) (ormap eval vars)]
-    [(list '= x y) (= (eval x) (eval y))]
-    [(list '> x y) (> (eval x) (eval y))]
+    [(cons '= vars) (is? = vars)]
+    [(cons '> vars) (is? > vars)]
+    [(cons '< vars) (is? < vars)]
     [(list 'not x) (not (eval x))]
     [(list 'sqrt x) (sqrt (eval x))]
-    [(list 'expt x n) (expt (eval x) (eval n))]))
+    [(list 'expt x n) (expt (eval x) (eval n))])))
 
 
 (define (get-lett formula)
@@ -121,3 +126,4 @@ Generate all possible fillings-in of letters in formula with digits."""
 (solve '(= (sqrt ATOM) (+ AT O M)))
 (solve '(= (sqrt ATOM) (+ AT OM)))
 (solve '(and (= (+ (expt A N) (expt B N)) (expt C N)) (> N 1)))
+(solve '(and (= (+ (expt A N) (expt IB N)) (+ (expt I N) (expt ID N)) IXDA) (> N 1)))
