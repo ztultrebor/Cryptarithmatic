@@ -5,7 +5,7 @@
     """S-Expr -> S-Expr
     Given a formula like 'ODD + ODD == EVEN', fill in digits to solve it.
     Return the solved S-Expr"""
-    (ormap valid (fill-in formula)))
+    (filter (lambda (f) (not (false? f))) (map valid (fill-in formula))))
 
 
 (define (fill-in formula)
@@ -112,4 +112,4 @@ Generate all possible fillings-in of letters in formula with digits."""
     (list->set '() lst)))
 
 
-(fill-in '(= (+ ODD ODD) EVEN))
+(solve '(= (+ ODD ODD) EVEN))
