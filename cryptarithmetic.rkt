@@ -8,15 +8,6 @@
     (filter (lambda (f) (not (false? f))) (map valid (fill-in formula))))
 
 
-(define (fill-in formula)
-"""S-Expr -> [ListOf S-Expr]
-Generate all possible fillings-in of letters in formula with digits."""
-  (local ((define variables (get-lett formula))
-          (define replacements (permute '(0 1 2 3 4 5 6 7 8 9) (length variables))))
-  ; - IN -
-  (map (lambda (r) (substitute formula variables r)) replacements)))
-
-
 (define (valid f)
     """S-Expr -> [Maybe S-Expr]
     Formula f is valid if and only if it evals true (plus it should have no 
@@ -24,6 +15,15 @@ Generate all possible fillings-in of letters in formula with digits."""
     (cond
       [(eval f) f]
       [else #f]))
+
+      
+(define (fill-in formula)
+"""S-Expr -> [ListOf S-Expr]
+Generate all possible fillings-in of letters in formula with digits."""
+  (local ((define variables (get-lett formula))
+          (define replacements (permute '(0 1 2 3 4 5 6 7 8 9) (length variables))))
+  ; - IN -
+  (map (lambda (r) (substitute formula variables r)) replacements)))
 
 
 (define (eval sexpr)
@@ -34,29 +34,29 @@ Generate all possible fillings-in of letters in formula with digits."""
     [(? boolean?) sexpr]
     [(? symbol?) sexpr]
     [(? string?) (error "no strings allowed")]
-    [(list '+ x y) (+ (eval x) (eval y))]
-    [(list '* x y) (+ (eval x) (eval y))]
+    [(cons '+ vars) (foldr + 0 (map eval vars))]
+    [(cons '* vars) (foldr * 1 (map eval vars))]
+    [(cons 'and vars) (andmap eval vars)]
+    [(cons 'or vars) (ormap eval vars)]
     [(list '= x y) (= (eval x) (eval y))]
-    [(list 'and x y) (and (eval x) (eval y))]
-    [(list 'or x y) (or (eval x) (eval y))]
-    [(list 'not x) (not (eval x))]))
+    [(list 'not x) (not (eval x))]
+    [(list 'sqrt x) (sqrt (eval x))]))
 
 
 (define (get-lett formula)
-  ; S-Expr -> BSL-Expr
-  ; takes an S-expression and converts it into a BSL-expression
+  """S-Expr -> [ListOf Char]
+  takes an S-expression and extracts all the 'variables'"""
   (local ((define (get-lett formula)
     (match formula
       [(? symbol?) (symbol->string formula)]
-      [(list '+   x y) (string-append (get-lett x) (get-lett y))]
-      [(list '=   x y) (string-append (get-lett x) (get-lett y))])))
+      [(cons op vars) (foldr string-append "" (map get-lett vars))])))
     ; - IN -
     (list->set (string->list (get-lett formula)))))
 
 
 (define (substitute formula letters digits)
   """S-Expr [ListOf Char] [ListOf N] -> S-Expr
-  takes an S-expression and replaces all alphabetic symbols with numerics"""
+  takes an S-expression and replaces all alphabetic letters with numeric digits"""
   (local ((define (replace l ls ds)
             (cond
               [(empty? ls) #f]
@@ -69,24 +69,14 @@ Generate all possible fillings-in of letters in formula with digits."""
                   (foldr string-append "" 
                                       (map (lambda (l) (replace l letters digits))
                                             (string->list (symbol->string formula)))))]
-              [(list '+   x y) (list '+ (substitute x) (substitute y))]
-              [(list '=   x y) (list '=  (substitute x) (substitute y))])))
+              [(cons op vars) (cons op (map substitute vars))])))
       ; - IN -
       (substitute formula)))
 
  
-
-
-
-
-
-
-
-
-
 (define (permute lst n)
-; [ListOf X] N -> [ListOf [ListOf X]]
-; create all permutations of given lst that have length n
+  """[ListOf X] N -> [ListOf [ListOf X]]
+  create all permutations of given lst that have length n"""
   (local ((define (permute assemblage parts n)
             (cond
                 [(empty? parts) (list assemblage)]
@@ -113,3 +103,6 @@ Generate all possible fillings-in of letters in formula with digits."""
 
 
 (solve '(= (+ ODD ODD) EVEN))
+(solve '(= (sqrt ATOM) (+ A TO M)))
+(solve '(= (sqrt ATOM) (+ AT O M)))
+(solve '(= (sqrt ATOM) (+ AT OM)))
